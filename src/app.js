@@ -29,6 +29,8 @@ app.use(morgan(morganOption));
 app.use(helmet());
 app.use(cors());
 
+app.use("/api/bookmarks", bookmarksRouter);
+
 app.get("/", (req, res) => {
   res.send("Hello, world!");
 });
@@ -41,7 +43,6 @@ app.use(function validateBearerToken(req, res, next) {
     logger.error(`Unauthorized request to path: ${req.path}`);
     return res.status(401).json({ error: "Unauthorized request" });
   }
-  // move to the next middleware
   next();
 });
 

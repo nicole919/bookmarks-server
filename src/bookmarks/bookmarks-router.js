@@ -5,7 +5,7 @@ const logger = require("../logger");
 const BookmarksService = require("./bookmarks-service");
 
 const bookmarksRouter = express.Router();
-const bodyParser = express.json();
+const jsonParser = express.json();
 
 const serializeBookmark = bookmark => ({
   id: bookmark.id,
@@ -16,7 +16,7 @@ const serializeBookmark = bookmark => ({
 });
 
 bookmarksRouter
-  .route("/bookmarks")
+  .route("/")
   .get((req, res, next) => {
     BookmarksService.getAllBookmarks(req.app.get("db"))
       .then(bookmarks => {
@@ -24,7 +24,7 @@ bookmarksRouter
       })
       .catch(next);
   })
-  .post(bodyParser, (req, res, next) => {
+  .post(jsonParser, (req, res, next) => {
     for (const field of ["title", "url", "rating"]) {
       if (!req.body[field]) {
         logger.error(`${field} is required`);
@@ -66,9 +66,10 @@ bookmarksRouter
   });
 
 bookmarksRouter
-  .route("/bookmarks/:bookmark_id")
+  .route("/:bookmark_id")
   .all((req, res, next) => {
     const { bookmark_id } = req.params;
+    console.log("BOOKMARK: ", bookmark_id);
     BookmarksService.getById(req.app.get("db"), bookmark_id)
       .then(bookmark => {
         if (!bookmark) {
@@ -93,6 +94,27 @@ bookmarksRouter
         res.status(204).end();
       })
       .catch(next);
-  });
+  })
+  .patch(jsonParser, (req, res, next) => {
+    const { title, url, description, rating } = req.body;
+    const bookmarkToUpdate = { title, url, description, rating };
 
+    const numberofValues = Object.values(bookmarkToUpdate).filter(Boolean)
+      .length;
+    if (numberOfValues === 0)
+      return res.status(400).json({
+        error: {
+          message: `Request body must contain either 'title', 'url', 'description', 'rating'`
+        }
+      });
+    ArticlesService.updateBookmark(
+      req.app.get("db"),
+      req.params.bookmark_id,
+      bookmarkToUpdate
+    )
+      .then(numRowsAffected => {
+        res.status(204).end();
+      })
+      .catch(next);
+  });
 module.exports = bookmarksRouter;
